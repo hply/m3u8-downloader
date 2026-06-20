@@ -697,11 +697,30 @@
             this.tsUrlList = []
             this.finishList = []
 
+            // 检测是否为 Master Playlist（多码率索引文件）
+            if (m3u8Str.indexOf('#EXT-X-STREAM-INF') > -1) {
+              // 提取第一个子 m3u8 文件路径
+              const lines = m3u8Str.split('\n')
+              let subM3u8Url = ''
+              for (let i = 0; i < lines.length; i++) {
+                if (lines[i].indexOf('#EXT-X-STREAM-INF') > -1 && i + 1 < lines.length) {
+                  subM3u8Url = lines[i + 1].trim()
+                  break
+                }
+              }
+              if (subM3u8Url) {
+                this.url = this.applyURL(subM3u8Url, this.url)
+                this.tips = '检测到多码率索引，正在解析子文件...'
+                this.getM3U8(onlyGetRange)
+                return
+              }
+            }
+
             // 提取 ts 视频片段地址
             m3u8Str.split('\n').forEach((item) => {
               // if (/.(png|image|ts|jpg|mp4|jpeg)/.test(item)) {
               // 放开片段后缀限制，下载非 # 开头的链接片段
-              if (/^[^#]/.test(item)) {
+              if (/^[^#]/.test(item) && item.trim()) {
                 console.log(item)
                 this.tsUrlList.push(this.applyURL(item, this.url))
                 this.finishList.push({
